@@ -1,6 +1,6 @@
 import streamlit as st
 
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -80,17 +80,6 @@ div.stButton > button:hover {
     color: #65475A;
 }
 
-.feature-card {
-    background-color: #FFFFFF;
-    padding: 23px;
-    border-radius: 15px;
-    border: 1px solid #F0D5E1;
-    text-align: center;
-    color: #B65D83;
-    font-weight: 600;
-    min-height: 90px;
-}
-
 hr {
     border-color: #F0D5E1;
 }
@@ -108,10 +97,19 @@ if "chat_store" not in st.session_state:
     st.session_state.chat_store = {}
 
 
-# ---------------- LOCAL LLM ----------------
+# ---------------- GROQ API CONFIGURATION ----------------
 
-llm = ChatOllama(
-    model="gemma3:1b",
+try:
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+
+except Exception:
+    st.error("Groq API Key is missing. Please configure it in Streamlit Secrets.")
+    st.stop()
+
+
+llm = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    groq_api_key=GROQ_API_KEY,
     temperature=0.7
 )
 
@@ -126,11 +124,13 @@ prompt = ChatPromptTemplate.from_messages([
         You are Nexus AI, a friendly and intelligent AI assistant.
 
         Your responsibilities:
+
         - Answer questions clearly.
         - Explain technical topics simply.
         - Help with programming and education.
         - Remember previous conversation context.
         - Give accurate and helpful responses.
+        - Provide well-structured answers.
         """
     ),
 
@@ -181,7 +181,7 @@ st.markdown(
 
 st.markdown(
     '<div class="subtitle">'
-    'Your Intelligent AI Assistant | Powered by Local LLM'
+    'Your Intelligent AI Assistant | Powered by Groq AI'
     '</div>',
     unsafe_allow_html=True
 )
@@ -193,22 +193,25 @@ with st.sidebar:
 
     st.markdown("## ⚙️ Settings")
 
-    st.success("Local AI Model: Gemma 3:1B")
+    st.success("AI Model: Llama 3.3 70B")
 
-    st.info("Memory: Enabled")
+    st.info("LangChain Memory: Enabled")
 
     st.markdown("---")
 
     st.markdown("### About Nexus AI")
 
     st.write(
-        "Nexus AI is a local intelligent chatbot "
-        "built using LangChain and Ollama."
+        "Nexus AI is an intelligent AI chatbot "
+        "built using Streamlit, LangChain and Groq."
     )
 
     st.markdown("---")
 
-    if st.button("🗑️ Clear Conversation", use_container_width=True):
+    if st.button(
+        "🗑️ Clear Conversation",
+        use_container_width=True
+    ):
 
         st.session_state.messages = []
         st.session_state.chat_store = {}
@@ -258,8 +261,6 @@ user_input = st.chat_input("Ask Nexus AI anything...")
 
 if user_input:
 
-    # Display user message
-
     st.session_state.messages.append({
         "role": "user",
         "content": user_input
@@ -267,8 +268,6 @@ if user_input:
 
     with st.chat_message("user"):
         st.markdown(user_input)
-
-    # Generate AI response
 
     with st.chat_message("assistant"):
 
@@ -297,14 +296,12 @@ if user_input:
                     "content": answer
                 })
 
-            except Exception as e:
+            except Exception:
 
-                answer = (
-                    "Unable to connect to Ollama. "
-                    "Please check whether Ollama is running "
-                    "and Gemma 3:1B is installed."
+                st.error(
+                    "Unable to generate a response. "
+                    "Please check your Groq API key "
+                    "and try again."
                 )
 
-                st.error(answer)
-
-                st.caption(str(e))
+                st.session_state.messages.pop()
