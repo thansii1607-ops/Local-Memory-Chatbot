@@ -87,7 +87,3 @@ This helps the chatbot understand previous messages and provide context-aware re
 
 NEXUS AI demonstrates the integration of Large Language Models, LangChain, and conversation memory to build an interactive AI chatbot application.
 
-
-
-
-YOUR_STREAMLIT_APP_LINK
